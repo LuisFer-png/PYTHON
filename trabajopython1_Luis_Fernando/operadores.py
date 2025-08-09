@@ -18,3 +18,9 @@ modulo = primer_dijito % segundo_dijito
 
 divicion_entera = primer_dijito // segundo_dijito
 
+print(f"""
+      Suma: {suma}
+      Resta: {resta}
+      Multiplicacion:
+      Division: {divicion}
+      """)
