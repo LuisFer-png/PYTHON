@@ -3,20 +3,23 @@ from pygame.math import Vector2
 
 pygame.init()
 
-BG_COLOR = (173, 204, 96)
-Snake_COLOR = (43,52,24)
+title_font = pygame.font.Font(None,40)
+score_font = pygame.font.Font(None,30)
+
+BG_COLOR = (138, 217, 255)
+Snake_COLOR = (30, 155, 214)
 
 cell_size = 30
 number_of_cells = 25
 
-OFFSET = 25
+OFFSET = 50
 
 class Food:
     def __init__(self, snake_body):
         self.position = self.generate_random_pos(snake_body)
 
     def draw(self):
-        food_rect = pygame.Rect(self.position.x * cell_size, self.position.y * cell_size,cell_size,cell_size)
+        food_rect = pygame.Rect(self.position.x * cell_size + OFFSET, self.position.y * cell_size + OFFSET,cell_size,cell_size)
         screen.blit(food_surface, food_rect)
         
     def generate_random_cell(self):
@@ -41,14 +44,18 @@ class Snake:
     def __init__(self):
         self.body = [Vector2(6,9), Vector2(5,9), Vector2(4,9)]
         self.direction = Vector2(1, 0)
+        self.next_direction = Vector2(1, 0)
         self.add_segment = False
+        self.eat_sound = pygame.mixer.Sound("sounds/eat.mp3")
+        self.wall_sound = pygame.mixer.Sound("sounds/wall.mp3")
 
     def draw(self):
         for segment in self.body:
-            segment_rect = pygame.Rect(segment.x * cell_size, segment.y * cell_size, cell_size, cell_size)
+            segment_rect = pygame.Rect(segment.x * cell_size + OFFSET, segment.y * cell_size + OFFSET, cell_size, cell_size)
             pygame.draw.rect(screen, Snake_COLOR, segment_rect,0, 7)
             
     def update(self):
+        self.direction = self.next_direction
         self.body.insert(0, self.body[0] + self.direction)
         if self.add_segment == False:
             self.body.pop()
@@ -64,6 +71,7 @@ class Game:
         self.snake = Snake()
         self.food = Food(self.snake.body)
         self.state = "RUNNING"
+        self.score = 0
     
     def draw(self):
         self.snake.draw()
@@ -80,17 +88,23 @@ class Game:
         if self.snake.body[0] == self.food.position:
             self.food.position = self.food.generate_random_pos(self.snake.body)
             self.snake.add_segment = True
+            self.score += 1
+            self.snake.eat_sound.play()
             
     def check_collision_with_edges(self):
-        if self.snake.body[0].x == number_of_cells or self.snake.body[0].x == 0:
+        if self.snake.body[0].x == number_of_cells or self.snake.body[0].x == -1:
             self.game_over()
-        elif self.snake.body[0].y == number_of_cells or self.snake.body[0].y == 0:
+            
+        elif self.snake.body[0].y == number_of_cells or self.snake.body[0].y == -1:
             self.game_over()
+            
             
     def game_over(self):
         self.snake.reset()
         self.food.position = self.food.generate_random_pos(self.snake.body)
         self.state = "STOPPED"
+        self.score = 0
+        self.snake.wall_sound.play
         
     def check_collision_with_tail(self):
         headless_snake = self.snake.body[1:]
@@ -99,7 +113,7 @@ class Game:
     
 screen = pygame.display.set_mode((2*OFFSET+cell_size * number_of_cells, 2*OFFSET+cell_size * number_of_cells))
 
-food_surface = pygame.image.load("graficos/cereza (1).png")
+food_surface = pygame.image.load("graficos/pixil-frame-0.png")
 
 pygame.display.set_caption("Retro Snake")
 
@@ -123,19 +137,24 @@ while True:
                 game.state = "RUNNING"
             
             if event.key == pygame.K_UP and game.snake.direction != Vector2(0,1):
-                game.snake.direction = Vector2(0,-1)
+                game.snake.next_direction = Vector2(0,-1)
             if event.key == pygame.K_DOWN and game.snake.direction != Vector2(0,-1):
-                game.snake.direction = Vector2(0,1)
+                game.snake.next_direction = Vector2(0,1)
             if event.key == pygame.K_LEFT and game.snake.direction != Vector2(1,0):
-                game.snake.direction = Vector2(-1, 0)
+                game.snake.next_direction = Vector2(-1, 0)
             if event.key == pygame.K_RIGHT and game.snake.direction != Vector2(-1,0):
-                game.snake.direction = Vector2(1,0)
+                game.snake.next_direction = Vector2(1,0)
     
     screen.fill(BG_COLOR)
     
     pygame.draw.rect(screen,Snake_COLOR,
     (OFFSET-5,OFFSET-5,cell_size*number_of_cells + 10,cell_size*number_of_cells+10)
     ,5)
+    
+    title_surface = title_font.render("Retro Snake", True, Snake_COLOR)
+    screen.blit(title_surface, (OFFSET -5, 20))
+    score_surface = score_font.render(str(game.score),True, Snake_COLOR)
+    screen.blit(score_surface, (OFFSET + cell_size * number_of_cells + 10,OFFSET - 5) )
     
     game.draw()
 
